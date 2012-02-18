@@ -1,0 +1,4 @@
+[
+  { "keys": ["alt+ctrl+o"], "command": "require_helper"
+  }
+]
