@@ -1,4 +1,4 @@
 [
-  { "keys": ["alt+ctrl+o"], "command": "require_helper"
-  }
+  { "keys": ["alt+ctrl+shift+o"], "command": "require_helper", "args": {"full": true} },
+  { "keys": ["alt+ctrl+o"], "command": "require_helper"}
 ]

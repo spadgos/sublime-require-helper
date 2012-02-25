@@ -2,24 +2,30 @@ import sublime
 import sublime_plugin
 import os
 import re
+import string
 
 
 class RequireHelperCommand(sublime_plugin.TextCommand):
 
-    fileList = None
     regex = None
 
-    def run(self, edit):
+    def run(self, edit, full=False):
         #  v = self.view
-        if RequireHelperCommand.fileList is None:
-            self.loadFileList()
-
+        self.loadFileList()
+        self.fullInsert = full
         self.edit = edit
         self.quick_panel(RequireHelperCommand.fileList, self.insert)
 
     def insert(self, index):
         if index >= 0:
-            self.view.insert(self.edit, self.view.sel()[0].begin(), RequireHelperCommand.fileList[index])
+            include = RequireHelperCommand.fileList[index]
+
+            if self.fullInsert:
+                include = "%s = require('%s')" % (
+                    string.capwords(('/' + include).rsplit('/', 1)[1], '-').replace('-', ''),
+                    include
+                )
+            self.view.insert(self.edit, self.view.sel()[0].begin(), include)
 
     def quick_panel(self, *args, **kwargs):
         self.get_window().show_quick_panel(*args, **kwargs)
