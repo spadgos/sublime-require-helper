@@ -5,6 +5,20 @@ import re
 import string
 
 
+def readLine(view, point, lineOffset):
+    (row, col) = view.rowcol(point)
+    row += lineOffset
+
+    if row < 0:
+        return None
+    point = view.text_point(row, 0)
+
+    if point > view.size():
+        return None
+
+    return view.substr(view.line(point))
+
+
 class RequireHelperCommand(sublime_plugin.TextCommand):
 
     regex = None
@@ -18,14 +32,44 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
 
     def insert(self, index):
         if index >= 0:
+            insertPos = self.view.sel()[0].begin()
             include = RequireHelperCommand.fileList[index]
 
             if self.fullInsert:
-                include = "%s = require('%s')" % (
-                    string.capwords(('/' + include).rsplit('/', 1)[1], '-').replace('-', ''),
-                    include
-                )
-            self.view.insert(self.edit, self.view.sel()[0].begin(), include)
+                include = self.makeFullInsert(include, insertPos)
+            self.view.insert(self.edit, insertPos, include)
+
+    def makeFullInsert(self, include, insertPos):
+        req_re = re.compile("^\\s*(var )?(\\w+\\s*)= require\\(")
+        varName = string.capwords(('/' + include).rsplit('/', 1)[1], '-').replace('-', '')
+
+        #  align with adjacent requires
+        lineCounter = -1
+        numSpaces = 1
+        while True:
+            line = readLine(self.view, insertPos, lineCounter)
+            print line
+            if line:
+                matches = req_re.match(line)
+                if matches:
+                    length = len(matches.groups(1)[1]) - len(varName)
+                    if length > 0:
+                        numSpaces = length
+                        break
+                    else:
+                        lineCounter += 1 if lineCounter > 0 else -1
+                        continue
+
+            if lineCounter < 0:
+                lineCounter *= -1
+            else:
+                break
+
+        return "%s%s= require('%s')" % (
+            varName,
+            " " * numSpaces,
+            include
+        )
 
     def quick_panel(self, *args, **kwargs):
         self.get_window().show_quick_panel(*args, **kwargs)
