@@ -138,10 +138,10 @@ class RequireHelperGotoDef(sublime_plugin.TextCommand):
         for folder in folders:
             path = os.path.join(folder, base, require)
 
-            if not os.path.exists(path):
+            if not os.path.isfile(path):
                 path += '.js'
 
-            if os.path.exists(path):
+            if os.path.isfile(path):
                 window.open_file(path)
                 break
         # todo: navigate to the function
