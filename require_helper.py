@@ -1,6 +1,7 @@
 import sublime
 import sublime_plugin
 import os
+import platform
 import re
 import string
 
@@ -34,6 +35,9 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
         if index >= 0:
             insertPos = self.view.sel()[0].begin()
             include = RequireHelperCommand.fileList[index]
+
+            if platform.system() == "Windows":
+                include = include.replace("\\", "/")
 
             if self.fullInsert:
                 include = self.makeFullInsert(include, insertPos)
