@@ -4,6 +4,17 @@ import os
 import re
 import string
 
+# python 2/3 string compatibility
+# http://python3porting.com/problems.html#nicer-solutions
+import sys
+if sys.version < '3':
+    def b(x):
+        return x
+else:
+    import codecs
+    def b(x):
+        return codecs.latin_1_encode(x)[0]
+
 
 def readLine(view, point, lineOffset):
     (row, col) = view.rowcol(point)
@@ -24,11 +35,15 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
     regex = None
 
     def run(self, edit, full=False):
-        #  v = self.view
         self.loadFileList()
         self.fullInsert = full
-        self.edit = edit
-        self.quick_panel(RequireHelperCommand.fileList, self.insert)
+
+        # st2
+        if (self.quick_panel):
+            self.quick_panel(RequireHelperCommand.fileList, self.insert)
+        # st3
+        else:
+            self.active_window().show_quick_panel(RequireHelperCommand.fileList, self.insert)
 
     def insert(self, index):
         if index >= 0:
@@ -37,7 +52,13 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
 
             if self.fullInsert:
                 include = self.makeFullInsert(include, insertPos)
-            self.view.insert(self.edit, insertPos, include)
+
+            self.view.run_command('require_helper_insert', {
+                'args': {
+                    'insertPos': insertPos,
+                    'include': include
+                }
+            })
 
     def makeFullInsert(self, include, insertPos):
         req_re = re.compile("^\\s*(var )?(\\w+\\s*)= require\\(")
@@ -48,7 +69,7 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
         numSpaces = 1
         while True:
             line = readLine(self.view, insertPos, lineCounter)
-            print line
+
             if line:
                 matches = req_re.match(line)
                 if matches:
@@ -89,12 +110,25 @@ class RequireHelperCommand(sublime_plugin.TextCommand):
         RequireHelperCommand.fileList = files
 
 
+# when a run() command terminates, the edit context is destroyed.
+# in order to complete the async insert after the user selects
+# from the file list, this helper command is invoked
+class RequireHelperInsertCommand(sublime_plugin.TextCommand):
+
+    def run(self, edit, args):
+        # for some reason st2 converts this integer to a float when it
+        # is passed to run_command via the 'args' option ;_;
+        insertPos = int(args['insertPos'])
+        include = args['include']
+        self.view.insert(edit, insertPos, include)
+
+
 def getFiles(relativePath, base, files):
     path = os.path.join(base, relativePath)
     try:
         dir_files = os.listdir(path)
         for d in dir_files:
-            d = d.decode('utf-8')
+            d = b(d).decode('utf-8')
             this_path = os.path.join(path, d)
             rel_path = os.path.join(relativePath, d)
             if (os.path.isdir(this_path)):
@@ -104,7 +138,7 @@ def getFiles(relativePath, base, files):
                     rel_path = re.sub(RequireHelperCommand.regex, '', rel_path)
                 files.append(rel_path)
     except OSError:
-        print "RequireHelper: could not find " + path
+        print("RequireHelper: could not find " + path)
         return []
 
 
