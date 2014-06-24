@@ -1,6 +1,6 @@
 ## RequireHelper
 
-RequireHelper is a small Sublime Text 2 plugin which allows you to insert file paths relative to your project root, or a custom subfolder.
+RequireHelper is a small Sublime Text 2 & 3 plugin which allows you to insert file paths relative to your project root, or a custom subfolder.
 
 I wrote it to save me some time when writing Javascript using the CommonJS style:
 
